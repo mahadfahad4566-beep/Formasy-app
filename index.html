@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diamond Pharmacy - Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .low-stock { background-color: #fef08a !important; } /* Yellow */
+        .out-of-stock { background-color: #fecaca !important; } /* Red */
+        .expired { color: #dc2626; font-weight: bold; }
+        .whatsapp-float { position: fixed; bottom: 20px; right: 20px; background: #25d366; color: white; padding: 12px 20px; border-radius: 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; transition: 0.3s; }
+        .whatsapp-float:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+
+    <nav class="bg-blue-800 p-4 text-white shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-tighter">💎 DIAMOND PHARMACY</h1>
+            <div id="notification-bell" class="relative cursor-pointer">
+                🔔 <span id="notif-count" class="absolute -top-2 -right-2 bg-red-500 text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-4 max-w-4xl">
+        <div class="bg-white p-6 rounded-lg shadow-sm mb-6 border border-gray-200">
+            <h2 class="text-lg font-semibold mb-4 text-blue-800">Add New Inventory</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <input type="text" id="itemName" placeholder="Medicine Name" class="border p-2 rounded outline-blue-500">
+                <input type="number" id="itemQty" placeholder="Qty" class="border p-2 rounded outline-blue-500">
+                <input type="date" id="expDate" class="border p-2 rounded outline-blue-500">
+                <button onclick="addItem()" class="bg-blue-700 text-white font-bold py-2 rounded hover:bg-blue-800">Add Stock</button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+            <table class="w-full text-left">
+                <thead class="bg-gray-100 border-b">
+                    <tr>
+                        <th class="p-3">Medicine Name</th>
+                        <th class="p-3">Qty</th>
+                        <th class="p-3">Expiry</th>
+                        <th class="p-3">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="stockTable">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <a href="https://wa.me/923464563020" target="_blank" class="whatsapp-float flex items-center gap-2">
+        <span>Contact Mahad</span>
+    </a>
+
+    <script>
+        let inventory = JSON.parse(localStorage.getItem('diamond_db')) || [];
+
+        function addItem() {
+            const name = document.getElementById('itemName').value;
+            const qty = parseInt(document.getElementById('itemQty').value);
+            const exp = document.getElementById('expDate').value;
+
+            if (name && qty >= 0 && exp) {
+                inventory.push({ name, qty, exp });
+                saveAndRender();
+                // Clear inputs
+                document.getElementById('itemName').value = '';
+                document.getElementById('itemQty').value = '';
+                document.getElementById('expDate').value = '';
+            } else {
+                alert("Please fill all fields correctly!");
+            }
+        }
+
+        function deleteItem(index) {
+            inventory.splice(index, 1);
+            saveAndRender();
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('diamond_db', JSON.stringify(inventory));
+            const table = document.getElementById('stockTable');
+            const notifCircle = document.getElementById('notif-count');
+            table.innerHTML = '';
+            
+            let alerts = 0;
+            const today = new Date();
+
+            inventory.forEach((item, index) => {
+                const expDate = new Date(item.exp);
+                let rowClass = "";
+                let statusText = "";
+
+                // Logic for Colors & Notifications
+                if (item.qty === 0 || expDate < today) {
+                    rowClass = "out-of-stock"; // Red
+                    alerts++;
+                } else if (item.qty <= 5) {
+                    rowClass = "low-stock"; // Yellow
+                    alerts++;
+                }
+
+                const isExpired = expDate < today ? "<br><span class='expired'>[EXPIRED]</span>" : "";
+
+                table.innerHTML += `
+                    <tr class="border-b ${rowClass}">
+                        <td class="p-3 font-medium">${item.name} ${isExpired}</td>
+                        <td class="p-3 font-bold">${item.qty}</td>
+                        <td class="p-3">${item.exp}</td>
+                        <td class="p-3">
+                            <button onclick="deleteItem(${index})" class="text-red-600 hover:text-red-900 text-sm font-bold">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            notifCircle.innerText = alerts;
+        }
+
+        // Initial Load
+        saveAndRender();
+    </script>
+</body>
+</html>
